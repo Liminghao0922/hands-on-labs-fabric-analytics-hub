@@ -1,0 +1,38 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - api/**
+      - azure-pipelines-functions.yml
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  FUNCTION_APP_NAME: fileuptest
+  AZURE_SERVICE_CONNECTION: your-azure-service-connection
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    displayName: Use Python 3.11
+    inputs:
+      versionSpec: '3.11'
+
+  - script: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+    displayName: Install Azure Functions Core Tools
+
+  - task: AzureCLI@2
+    displayName: Deploy Function App
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd api
+        func azure functionapp publish "$(FUNCTION_APP_NAME)" --python --build remote

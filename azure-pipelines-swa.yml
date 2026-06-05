@@ -1,0 +1,35 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - frontend/**
+      - azure-pipelines-swa.yml
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  NODE_VERSION: '20.x'
+
+steps:
+  - checkout: self
+
+  - task: NodeTool@0
+    displayName: Use Node.js $(NODE_VERSION)
+    inputs:
+      versionSpec: $(NODE_VERSION)
+
+  - task: AzureStaticWebApp@0
+    displayName: Build and Deploy Azure Static Web App
+    inputs:
+      app_location: frontend
+      api_location: ''
+      output_location: dist
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
