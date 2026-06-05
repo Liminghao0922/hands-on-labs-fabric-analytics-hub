@@ -138,7 +138,29 @@ Notes:
 - `powerbi_report_ids` is optional. If omitted or empty, all workspace reports are returned.
 - The API enforces that user can only access the mapped folder.
 
-## 8. API Endpoints
+## 8. Portal Screenshots
+
+This section showcases the runtime appearance of the Fabric Analytics Hub portal.
+
+### Overview Page
+
+The landing page displays available features and navigation to file management and Power BI reports.
+
+![Overview Page](./screenshots/01-overview.png)
+
+### Lakehouse Files
+
+Users can browse, upload, download, and delete files within authorized folders. Folder-level permissions are enforced at the OneLake SDK level.
+
+![Lakehouse Files](./screenshots/02-lakehouse-files.png)
+
+### Power BI Reports
+
+Embedded Power BI reports render with App Owned Data embedding powered by backend-generated tokens. Reports display in responsive containers with refresh and fullscreen controls.
+
+![Power BI Reports](./screenshots/03-powerbi-reports.png)
+
+## 9. API Endpoints
 
 - `GET /api/profile` - Returns authenticated user info
 - `GET /api/folders` - Returns list of available folders for user to try accessing
@@ -149,7 +171,7 @@ Notes:
 - `GET /api/reports` - Returns available Power BI reports for the mapped SP
 - `POST /api/reports/embed` (JSON body: `{ "reportId": "<guid>" }`) - Generates App Owned Data embed config
 
-## 9. Local Development
+## 10. Local Development
 
 Use the dedicated hands-on guides:
 
@@ -194,14 +216,14 @@ swa start http://localhost:5173 --api-location api --app-location frontend
 
 6. Open `http://localhost:4280` in browser and test sign-in, folder operations, and Power BI report embedding.
 
-## 10. Security Notes
+## 11. Security Notes
 
 - Never store service principal secrets in source code.
 - Use Key Vault access control and least privilege.
 - Restrict Key Vault access to the app's managed identity in cloud.
 - Always configure folder permissions in Fabric OneLake UI for clear governance and compliance.
 
-## 11. Deployment Model
+## 12. Deployment Model
 
 Production uses a linked API model:
 
@@ -216,7 +238,7 @@ Important notes:
 - Set `api_location` to an empty string in the SWA workflow when using BYO Functions.
 - PR preview environments do not support linked backend APIs.
 
-## 12. Deployment Assets
+## 13. Deployment Assets
 
 - End-to-end release checklist: `DEPLOYMENT_CHECKLIST.md`
 - Key Vault service principal profile template: `api/config/service_principal_secret.sample.json`

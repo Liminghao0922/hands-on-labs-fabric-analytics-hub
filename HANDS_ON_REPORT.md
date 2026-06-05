@@ -14,7 +14,7 @@ Part 2 focuses on:
 
 ## 2. Report Prerequisites (Delta from Part 1)
 
-1. Prepare one or more reports in the target Power BI workspace.
+1. Prepare one or more reports in the target Power BI workspace. You can use the sample reports for a quick start. Refer to [https://learn.microsoft.com/en-us/power-bi/create-reports/sample-datasets](https://learn.microsoft.com/en-us/power-bi/create-reports/sample-datasets) for more details.
 2. Ensure the service principal used in each user profile secret has access to:
    - the Power BI workspace
    - the reports included in `powerbi_report_ids`

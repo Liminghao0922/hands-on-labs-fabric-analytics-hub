@@ -296,7 +296,9 @@ td.right {
 
 .report-frame {
   width: 100%;
-  min-height: 640px;
+  height: 72vh;
+  min-height: 700px;
+  max-height: 1100px;
 }
 
 .spinner {
@@ -347,6 +349,8 @@ td.right {
   }
 
   .report-frame {
-    min-height: 520px;
+    height: 62vh;
+    min-height: 560px;
+    max-height: none;
   }
 }

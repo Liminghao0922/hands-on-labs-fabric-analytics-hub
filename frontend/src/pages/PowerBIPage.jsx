@@ -88,6 +88,10 @@ export default function PowerBIPage() {
           id: embedConfig.reportId,
           permissions: pbi.models.Permissions.Read,
           settings: {
+            layoutType: pbi.models.LayoutType.Custom,
+            customLayout: {
+              displayOption: pbi.models.DisplayOption.FitToWidth,
+            },
             panes: {
               filters: { expanded: false, visible: true },
               pageNavigation: { visible: true },
