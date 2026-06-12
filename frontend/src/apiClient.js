@@ -28,9 +28,44 @@ export async function apiPost(url, payload) {
 export async function safeReadError(res) {
   try {
     const payload = await res.json();
-    return payload.error || JSON.stringify(payload);
+    return formatErrorPayload(payload) || JSON.stringify(payload);
   } catch {
-    return await res.text();
+    return parseErrorText(await res.text());
+  }
+}
+
+function formatErrorPayload(payload) {
+  if (!payload) {
+    return "";
+  }
+
+  if (typeof payload === "string") {
+    return parseErrorText(payload);
+  }
+
+  const parts = [];
+  if (payload.error) {
+    parts.push(payload.error);
+  }
+  if (payload.errorId) {
+    parts.push(`Error ID: ${payload.errorId}`);
+  }
+  if (payload.details) {
+    parts.push(payload.details);
+  }
+
+  return parts.join(" | ");
+}
+
+function parseErrorText(text) {
+  if (!text) {
+    return "";
+  }
+
+  try {
+    return formatErrorPayload(JSON.parse(text)) || text;
+  } catch {
+    return text;
   }
 }
 
@@ -57,7 +92,8 @@ export function uploadFiles(folder, files, onProgress) {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+        const errorMessage = parseErrorText(xhr.responseText) || `Upload failed: ${xhr.status}`;
+        reject(new Error(errorMessage));
       }
     };
 

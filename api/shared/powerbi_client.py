@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from azure.identity import ClientSecretCredential
@@ -42,7 +42,7 @@ class PowerBIClient:
             "Content-Type": "application/json",
         }
 
-    def _configured_report_ids(self) -> list[str]:
+    def _configured_report_ids(self) -> List[str]:
         return [report_id.strip() for report_id in self._sp_config.powerbi_report_ids if report_id and report_id.strip()]
 
     def _default_embed_url(self, report_id: str) -> str:
@@ -86,7 +86,7 @@ class PowerBIClient:
         response.raise_for_status()
         return response.json()
 
-    def list_reports(self) -> list[PowerBIReport]:
+    def list_reports(self) -> List[PowerBIReport]:
         configured_ids = self._configured_report_ids()
         try:
             workspace_id = self._workspace_id()

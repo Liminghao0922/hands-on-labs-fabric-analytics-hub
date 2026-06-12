@@ -1,5 +1,9 @@
 import json
+import logging
+import os
+import uuid
 from http import HTTPStatus
+from typing import Optional, Tuple, Union
 
 import azure.functions as func
 
@@ -10,6 +14,8 @@ from shared.onelake_client import OneLakeClient
 from shared.powerbi_client import PowerBIClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+logger = logging.getLogger(__name__)
+SHOW_DETAILED_ERRORS = os.getenv("SHOW_DETAILED_ERRORS", "false").lower() == "true"
 
 
 def _json_response(payload: dict, status_code: int = HTTPStatus.OK) -> func.HttpResponse:
@@ -20,7 +26,38 @@ def _json_response(payload: dict, status_code: int = HTTPStatus.OK) -> func.Http
     )
 
 
-def _build_client(req: func.HttpRequest) -> tuple[str, OneLakeClient] | tuple[None, func.HttpResponse]:
+def _error_id(req: func.HttpRequest) -> str:
+    return req.headers.get("x-ms-client-request-id") or str(uuid.uuid4())
+
+
+def _internal_error(
+    req: func.HttpRequest,
+    *,
+    route: str,
+    message: str,
+    exc: Exception,
+    user_upn: Optional[str] = None,
+) -> func.HttpResponse:
+    error_id = _error_id(req)
+    logger.exception(
+        "Unhandled error route=%s method=%s user=%s errorId=%s",
+        route,
+        req.method,
+        user_upn or "unknown",
+        error_id,
+    )
+
+    payload = {
+        "error": message,
+        "errorId": error_id,
+    }
+    if SHOW_DETAILED_ERRORS:
+        payload["details"] = str(exc)
+
+    return _json_response(payload, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+def _build_client(req: func.HttpRequest) -> Union[Tuple[str, OneLakeClient], Tuple[None, func.HttpResponse]]:
     user_upn = get_user_upn(req)
     if not user_upn:
         return None, func.HttpResponse("Unauthorized", status_code=HTTPStatus.UNAUTHORIZED)
@@ -31,9 +68,21 @@ def _build_client(req: func.HttpRequest) -> tuple[str, OneLakeClient] | tuple[No
     except MappingNotFoundError as exc:
         return None, _json_response({"error": str(exc)}, status_code=HTTPStatus.FORBIDDEN)
     except KeyVaultConfigError as exc:
-        return None, _json_response({"error": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return None, _internal_error(
+            req,
+            route="client_init",
+            message="Key Vault configuration error while loading user/SP mapping.",
+            exc=exc,
+            user_upn=user_upn,
+        )
     except Exception as exc:
-        return None, _json_response({"error": f"Failed to load user/SP configuration: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return None, _internal_error(
+            req,
+            route="client_init",
+            message="Failed to load user/SP configuration.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
     client = OneLakeClient(sp_config=sp_config)
     return user_upn, client
@@ -50,9 +99,21 @@ def _resolve_user_sp_config(req: func.HttpRequest):
     except MappingNotFoundError as exc:
         return None, None, _json_response({"error": str(exc)}, status_code=HTTPStatus.FORBIDDEN)
     except KeyVaultConfigError as exc:
-        return None, None, _json_response({"error": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return None, None, _internal_error(
+            req,
+            route="sp_config_init",
+            message="Key Vault configuration error while loading Power BI profile.",
+            exc=exc,
+            user_upn=user_upn,
+        )
     except Exception as exc:
-        return None, None, _json_response({"error": f"Failed to load user/SP configuration: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return None, None, _internal_error(
+            req,
+            route="sp_config_init",
+            message="Failed to load user/SP configuration.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
     return user_upn, sp_config, None
 
@@ -76,7 +137,13 @@ def folders(req: func.HttpRequest) -> func.HttpResponse:
         # Dynamically list folders accessible to the service principal
         available_folders = client_or_response.list_accessible_folders()
     except Exception as exc:
-        return _json_response({"error": f"Failed to retrieve accessible folders: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="folders",
+            message="Failed to retrieve accessible folders.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
     return _json_response({"folders": available_folders})
 
@@ -94,8 +161,13 @@ def files(req: func.HttpRequest) -> func.HttpResponse:
     try:
         file_entries = client_or_response.list_files(folder_name=folder)
     except Exception as exc:
-        # Could be permission denied, not found, or other OneLake error
-        return _json_response({"error": f"Failed to list files: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="files",
+            message="Failed to list files.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
     payload = {
         "folder": folder,
@@ -132,8 +204,13 @@ def upload(req: func.HttpRequest) -> func.HttpResponse:
         client_or_response.upload_files(folder_name=folder, files=files)
         return _json_response({"message": "Upload completed."})
     except Exception as exc:
-        # Could be permission denied or other OneLake error
-        return _json_response({"error": f"Failed to upload files: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="upload",
+            message="Failed to upload files.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
 
 @app.route(route="download", methods=["POST"])
@@ -159,8 +236,13 @@ def download(req: func.HttpRequest) -> func.HttpResponse:
         }
         return func.HttpResponse(body=archive, status_code=HTTPStatus.OK, headers=headers)
     except Exception as exc:
-        # Could be permission denied or other OneLake error
-        return _json_response({"error": f"Failed to download files: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="download",
+            message="Failed to download files.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
 
 @app.route(route="delete", methods=["POST"])
@@ -182,8 +264,13 @@ def delete(req: func.HttpRequest) -> func.HttpResponse:
         deleted_count = client_or_response.delete_files(folder_name=folder, filenames=filenames)
         return _json_response({"message": "Delete completed.", "deleted": deleted_count})
     except Exception as exc:
-        # Could be permission denied or other OneLake error
-        return _json_response({"error": f"Failed to delete files: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="delete",
+            message="Failed to delete files.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
 
 @app.route(route="reports", methods=["GET"])
@@ -209,12 +296,18 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
         }
         return _json_response(payload)
     except Exception as exc:
-        return _json_response({"error": f"Failed to list Power BI reports: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="reports",
+            message="Failed to list Power BI reports.",
+            exc=exc,
+            user_upn=user_upn,
+        )
 
 
 @app.route(route="reports/embed", methods=["POST"])
 def reports_embed(req: func.HttpRequest) -> func.HttpResponse:
-    _, sp_config, error_response = _resolve_user_sp_config(req)
+    user_upn, sp_config, error_response = _resolve_user_sp_config(req)
     if error_response:
         return error_response
 
@@ -230,4 +323,10 @@ def reports_embed(req: func.HttpRequest) -> func.HttpResponse:
     except ValueError as exc:
         return _json_response({"error": str(exc)}, status_code=HTTPStatus.BAD_REQUEST)
     except Exception as exc:
-        return _json_response({"error": f"Failed to generate embed token: {exc}"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _internal_error(
+            req,
+            route="reports_embed",
+            message="Failed to generate embed token.",
+            exc=exc,
+            user_upn=user_upn,
+        )

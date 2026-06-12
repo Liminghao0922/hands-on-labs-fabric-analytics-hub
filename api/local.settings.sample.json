@@ -7,6 +7,7 @@
     "USER_SP_MAPPING_SECRET_NAME": "user-sp-mapping",
     "USER_SP_MAPPING_FILE": "config/user_sp_mapping.json",
     "USER_SP_MAPPING_ALLOW_FILE_FALLBACK": "true",
+    "SHOW_DETAILED_ERRORS": "true",
     "ALLOW_LOCAL_DEV_AUTH": "true",
     "DEV_USER_UPN": "user01@contoso.com"
   }

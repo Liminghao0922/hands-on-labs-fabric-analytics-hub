@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
@@ -17,7 +17,7 @@ class ServicePrincipalConfig:
     lakehouse_name: str
     root_path: str
     powerbi_workspace_id: Optional[str]
-    powerbi_report_ids: list[str]
+    powerbi_report_ids: List[str]
 
 
 class KeyVaultConfigError(Exception):
