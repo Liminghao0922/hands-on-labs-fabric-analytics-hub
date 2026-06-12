@@ -76,6 +76,7 @@ Create one secret per profile (for example `sp-user01-onelake`) using:
 
 - Azure DevOps pipeline completes successfully on `main`.
 - Function App is deployed before the Static Web App.
+- Function App deployment uses zipDeploy, not `func azure functionapp publish --build remote`, when shared key access is disabled on the storage account.
 - Sign-in succeeds through SWA auth.
 - `/api/profile` returns current user.
 - File list/upload/download/delete work according to folder permissions.

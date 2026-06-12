@@ -239,6 +239,7 @@ For Azure DevOps / Azure Repos, the recommended flow is:
 3. Store `AZURE_SERVICE_CONNECTION`, `FUNCTION_APP_NAME`, and `AZURE_STATIC_WEB_APPS_API_TOKEN` as secret pipeline variables or in a variable group.
 4. Use [azure-pipelines.yml](azure-pipelines.yml) as the main deployment pipeline.
 5. Let the pipeline deploy the Function App first, then build and deploy the Static Web App.
+6. The Function App pipeline now uses local package creation plus zipDeploy, which avoids Kudu storage key checks in accounts that disallow shared key authentication.
 
 Important notes:
 

@@ -36,22 +36,33 @@ stages:
             inputs:
               versionSpec: $(PYTHON_VERSION)
 
-          - script: npm install -g azure-functions-core-tools@4 --unsafe-perm true
-            displayName: Install Azure Functions Core Tools
+          - script: |
+              python -m pip install --upgrade pip
+              pip install --target="$(Build.SourcesDirectory)/api/.python_packages/lib/site-packages" -r requirements.txt
+            displayName: Install function dependencies
+            workingDirectory: api
 
           - script: python -m compileall .
             displayName: Validate Python sources
             workingDirectory: api
 
-          - task: AzureCLI@2
+          - task: ArchiveFiles@2
+            displayName: Package Function App
+            inputs:
+              rootFolderOrFile: '$(Build.SourcesDirectory)/api'
+              includeRootFolder: false
+              archiveType: zip
+              archiveFile: '$(Build.ArtifactStagingDirectory)/functionapp.zip'
+              replaceExistingArchive: true
+
+          - task: AzureFunctionApp@2
             displayName: Deploy Function App
             inputs:
               azureSubscription: $(AZURE_SERVICE_CONNECTION)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                cd api
-                func azure functionapp publish "$(FUNCTION_APP_NAME)" --python --build remote
+              appType: functionAppLinux
+              appName: $(FUNCTION_APP_NAME)
+              package: '$(Build.ArtifactStagingDirectory)/functionapp.zip'
+              deploymentMethod: auto
 
       - job: DeployStaticWebApp
         displayName: Build and deploy Azure Static Web App
