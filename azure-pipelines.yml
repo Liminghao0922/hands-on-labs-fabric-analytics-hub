@@ -20,8 +20,8 @@ variables:
   PYTHON_VERSION: '3.11'
   FUNCTION_APP_NAME: func-lakehouse-filemanagement
   AZURE_SERVICE_CONNECTION: hands-on-labs-fabric-analytics-hub
-  AZURE_STATIC_WEB_APPS_API_TOKEN: your-static-web-app-token
-
+  AZURE_STATIC_WEB_APPS_API_TOKEN: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
+  
 stages:
   - stage: Deploy
     displayName: Deploy backend and frontend
