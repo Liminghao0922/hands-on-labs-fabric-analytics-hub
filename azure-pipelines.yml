@@ -74,17 +74,10 @@ stages:
             inputs:
               versionSpec: $(NODE_VERSION)
 
-          - script: |
-              cd frontend
-              npm ci
-              npm run build
-            displayName: Build frontend
-
           - task: AzureStaticWebApp@0
-            displayName: Deploy Azure Static Web App
+            displayName: Build and deploy Azure Static Web App
             inputs:
               app_location: frontend
               api_location: ''
               output_location: dist
-              skip_app_build: true
               azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
