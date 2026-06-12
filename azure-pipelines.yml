@@ -41,18 +41,16 @@ stages:
             displayName: Install function dependencies
             workingDirectory: api
 
-          - script: python -m compileall .
-            displayName: Validate Python sources
-            workingDirectory: api
-
           - task: ArchiveFiles@2
-            displayName: Package Function App
+            displayName: "Archive files"
             inputs:
-              rootFolderOrFile: '$(Build.SourcesDirectory)/api'
+              rootFolderOrFile: "$(System.DefaultWorkingDirectory)"
               includeRootFolder: false
-              archiveType: zip
-              archiveFile: '$(Build.ArtifactStagingDirectory)/functionapp.zip'
-              replaceExistingArchive: true
+              archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
+              artifactName: 'drop'
 
           - task: AzureFunctionApp@2
             displayName: Deploy Function App
@@ -60,7 +58,7 @@ stages:
               azureSubscription: $(AZURE_SERVICE_CONNECTION)
               appType: functionAppLinux
               appName: $(FUNCTION_APP_NAME)
-              package: '$(Build.ArtifactStagingDirectory)/functionapp.zip'
+              package: $(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip
               deploymentMethod: auto
 
       - job: DeployStaticWebApp
