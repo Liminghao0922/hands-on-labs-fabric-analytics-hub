@@ -17,7 +17,7 @@ pool:
 
 variables:
   NODE_VERSION: '20.x'
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13'
   FUNCTION_APP_NAME: func-lakehouse-filemanagement
   AZURE_SERVICE_CONNECTION: hands-on-labs-fabric-analytics-hub
 
