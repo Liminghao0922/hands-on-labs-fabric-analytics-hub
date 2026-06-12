@@ -232,6 +232,14 @@ Production uses a linked API model:
 3. Link the Functions app in the Static Web Apps portal under **APIs**.
 4. Keep `/api/*` requests in the frontend; SWA proxies them to the linked backend.
 
+For Azure DevOps / Azure Repos, the recommended flow is:
+
+1. Push this repository to Azure Repos.
+2. Create an Azure DevOps service connection for the Azure subscription that hosts the Function App and Static Web App.
+3. Store `AZURE_SERVICE_CONNECTION`, `FUNCTION_APP_NAME`, and `AZURE_STATIC_WEB_APPS_API_TOKEN` as secret pipeline variables or in a variable group.
+4. Use [azure-pipelines.yml](azure-pipelines.yml) as the main deployment pipeline.
+5. Let the pipeline deploy the Function App first, then build and deploy the Static Web App.
+
 Important notes:
 
 - The linked Functions app must remain publicly reachable by SWA.
@@ -240,5 +248,6 @@ Important notes:
 
 ## 13. Deployment Assets
 
+- Main Azure DevOps pipeline: [azure-pipelines.yml](azure-pipelines.yml)
 - End-to-end release checklist: `DEPLOYMENT_CHECKLIST.md`
 - Key Vault service principal profile template: `api/config/service_principal_secret.sample.json`

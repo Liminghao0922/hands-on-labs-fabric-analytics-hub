@@ -327,44 +327,34 @@ Local server running at http://localhost:4280
 - **"Unauthorized"**: Ensure `ALLOW_LOCAL_DEV_AUTH=true` and `DEV_USER_UPN` is set.
 - **Key Vault authentication error**: Run `az login` to ensure your CLI is authenticated.
 
-## 7. Deploy to Azure Static Web Apps + Linked Azure Functions Backend
+## 7. Deploy with Azure DevOps / Azure Repos
 
 ### Steps
 
-1. Create an Azure Static Web App resource (if you don't have one):
+1. Create an Azure DevOps project and an empty Azure Repos repository.
+
+2. Push this workspace to Azure Repos:
 
 ```bash
-az staticwebapp create \
-  --name "swa-onelake-demo" \
-  --resource-group "<your-resource-group>" \
-  --location "<region>" \
-  --source "https://github.com/<your-github-username>/<repo-name>" \
-  --branch "main" \
-  --app-location "frontend" \
-  --api-location "" \
-  --output-location "dist"
+git remote add azure https://dev.azure.com/<org>/<project>/_git/<repo>
+git push -u azure main
 ```
 
-2. Deploy the backend as a separate Azure Functions app.
+If you already have an `azure` remote, use `git remote set-url azure <url>` instead.
 
-3. In Azure Portal, go to your Static Web App → **APIs**:
+3. In Azure DevOps, create these resources:
+  - One service connection for the Azure subscription that hosts the Function App and Static Web App
+  - One variable group or secret variable set with `AZURE_SERVICE_CONNECTION`, `FUNCTION_APP_NAME`, and `AZURE_STATIC_WEB_APPS_API_TOKEN`
 
-   - Under **Production**, select **Link**.
-   - Choose **Function App**.
-   - Select your Azure Functions app.
-   - Confirm the link.
+4. Create a pipeline from [azure-pipelines.yml](azure-pipelines.yml).
 
-4. In Azure Portal, go to your Functions app → **Identity** and enable managed identity.
+5. Ensure the Function App has these application settings:
+  - `KEY_VAULT_URL`: `https://kv-onelake-demo.vault.azure.net/`
+  - `USER_SP_MAPPING_SECRET_NAME`: `user-sp-mapping`
+  - `USER_SP_MAPPING_ALLOW_FILE_FALLBACK`: `false`
+  - Optional: `USER_SP_MAPPING_FILE`: `config/user_sp_mapping.json`
 
-5. In Azure Portal, go to your Functions app → **Configuration** and add:
-   - `KEY_VAULT_URL`: `https://kv-onelake-demo.vault.azure.net/`
-   - `USER_SP_MAPPING_SECRET_NAME`: `user-sp-mapping`
-   - `USER_SP_MAPPING_ALLOW_FILE_FALLBACK`: `false`
-
-   Optional local-style fallback in cloud:
-   - `USER_SP_MAPPING_FILE`: `config/user_sp_mapping.json`
-
-6. Grant the Functions app's managed identity access to Key Vault:
+6. Enable managed identity on the Functions app and grant it access to Key Vault:
 
 ```bash
 # Get the Functions app's managed identity (principal ID)
@@ -378,29 +368,20 @@ az keyvault set-policy --name "kv-onelake-demo" \
   --secret-permissions get list
 ```
 
-7. Configure Entra ID authentication in Static Web Apps:
+7. In Azure Portal, go to your Static Web App → **APIs** and link the deployed Function App under **Production**.
 
-   - In Azure Portal → **Settings** → **Authentication**
-   - Click **Add** → **Entra ID**
-   - Fill in app registration details (or create a new one)
-   - Set **Restricted access** to **Require authentication**
+8. In Azure Portal, configure Entra ID authentication for the Static Web App:
+  - Go to **Settings** → **Authentication**
+  - Click **Add** → **Entra ID**
+  - Fill in app registration details or create a new one
+  - Set **Restricted access** to **Require authentication**
 
-8. Configure GitHub deployment (if using GitHub):
+9. Commit and push any code changes to `main`. The pipeline will:
+  - Publish the Function App first
+  - Build the frontend
+  - Deploy the Azure Static Web App
 
-   - Push your code to GitHub
-   - In Azure Portal → **Deployment** → Connect your GitHub repo
-  - The provided GitHub Actions workflows will trigger automatically:
-    - `.github/workflows/azure-static-web-apps.yml`
-    - `.github/workflows/azure-functions-backend.yml`
-
-9. Wait for deployment to complete and verify:
-
-```bash
-az staticwebapp show --name "swa-onelake-demo" \
-  --resource-group "<your-resource-group>"
-```
-
-Once deployment is complete, you can access your app at the generated URL (e.g., `https://swa-onelake-demo.azurestaticapps.net`).
+10. After the pipeline finishes, verify the Static Web App URL in Azure Portal.
 
 ### Troubleshooting
 

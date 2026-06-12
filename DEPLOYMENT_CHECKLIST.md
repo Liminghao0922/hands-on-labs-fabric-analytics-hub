@@ -2,6 +2,7 @@
 
 ## 1. Azure Resources
 
+- Azure DevOps project and Azure Repos repository are created.
 - Azure Static Web App is created.
 - Azure Function App is created (Python, v4 runtime).
 - Azure Key Vault is created.
@@ -9,13 +10,25 @@
 
 ## 2. Required Azure DevOps Variables
 
-Set these variables in the pipeline or variable group.
+Set these variables in the pipeline or variable group for [azure-pipelines.yml](azure-pipelines.yml).
 
-### For `azure-pipelines-swa.yml`
+### Main pipeline
+
+- `AZURE_SERVICE_CONNECTION`
+- `AZURE_STATIC_WEB_APPS_API_TOKEN`
+- `FUNCTION_APP_NAME`
+- `NODE_VERSION` (optional override)
+- `PYTHON_VERSION` (optional override)
+
+### Legacy split pipelines
+
+If you still use the single-target pipeline files, keep these variables available.
+
+#### For `azure-pipelines-swa.yml`
 
 - `AZURE_STATIC_WEB_APPS_API_TOKEN`
 
-### For `azure-pipelines-functions.yml`
+#### For `azure-pipelines-functions.yml`
 
 - `AZURE_SERVICE_CONNECTION`
 - `FUNCTION_APP_NAME`
@@ -61,6 +74,8 @@ Create one secret per profile (for example `sp-user01-onelake`) using:
 
 ## 6. Validation After Deployment
 
+- Azure DevOps pipeline completes successfully on `main`.
+- Function App is deployed before the Static Web App.
 - Sign-in succeeds through SWA auth.
 - `/api/profile` returns current user.
 - File list/upload/download/delete work according to folder permissions.
