@@ -1,6 +1,10 @@
 {
   "routes": [
     {
+      "route": "/session-logged-out",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
       "route": "/assets/*",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable"

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import * as pbi from "powerbi-client";
 import { apiGet, apiPost } from "../apiClient";
+import { markActivity } from "../sessionClient";
+
+const ACTIVITY_EVENTS = ["dataSelected", "visualClicked", "pageChanged", "buttonClicked", "commandTriggered"];
 
 export default function PowerBIPage() {
   const reportContainerRef = useRef(null);
@@ -103,11 +106,35 @@ export default function PowerBIPage() {
         const embeddedReport = powerbiServiceRef.current.embed(targetContainer, reportConfig);
         embeddedReportRef.current = embeddedReport;
 
+        let reportReady = false;
+        const onReady = () => {
+          reportReady = true;
+          if (mounted) {
+            setLoadingEmbed(false);
+          }
+        };
+        embeddedReport.on("rendered", onReady);
         embeddedReport.on("loaded", () => {
+          reportReady = true;
           if (mounted) {
             setLoadingEmbed(false);
           }
         });
+
+        // Scrolling inside the cross-origin report iframe is not detectable.
+        for (const name of ACTIVITY_EVENTS) {
+          embeddedReport.on(name, (event) => {
+            if (import.meta.env.DEV) {
+              console.debug("Power BI activity event", name, event?.detail?.visual?.type);
+            }
+            if (mounted) {
+              markActivity(`powerbi:${name}`, {
+                visualType: event?.detail?.visual?.type,
+                ignoreReason: name === "pageChanged" && !reportReady ? "initial-load" : null,
+              });
+            }
+          });
+        }
 
         embeddedReport.on("error", (event) => {
           if (mounted) {
@@ -127,6 +154,11 @@ export default function PowerBIPage() {
 
     return () => {
       mounted = false;
+      if (embeddedReportRef.current) {
+        for (const name of [...ACTIVITY_EVENTS, "loaded", "rendered", "error"]) {
+          embeddedReportRef.current.off(name);
+        }
+      }
       if (powerbiServiceRef.current && reportContainerRef.current) {
         try {
           powerbiServiceRef.current.reset(reportContainerRef.current);

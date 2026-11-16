@@ -9,6 +9,24 @@
     "USER_SP_MAPPING_ALLOW_FILE_FALLBACK": "true",
     "SHOW_DETAILED_ERRORS": "true",
     "ALLOW_LOCAL_DEV_AUTH": "true",
-    "DEV_USER_UPN": "user01@contoso.com"
+    "DEV_USER_UPN": "user01@contoso.com",
+    "SESSION_CONTROL_ENABLED": "true",
+    "SESSION_COMPANY_ID": "company-a",
+    "SESSION_MAX_COUNT": "30",
+    "SESSION_TTL_SECONDS": "900",
+    "SESSION_HEARTBEAT_INTERVAL_SECONDS": "300",
+    "SESSION_HEARTBEAT_MODE": "activity",
+    "SESSION_RENEWAL_MARGIN_SECONDS": "120",
+    "SESSION_ACTIVITY_CHECK_SECONDS": "600",
+    "SESSION_IDLE_TIMEOUT_SECONDS": "600",
+    "SESSION_WARNING_SECONDS": "60",
+    "SESSION_API_EXTEND": "false",
+    "SESSION_FAIL_OPEN": "false",
+    "SESSION_COUNT_MODE": "browser",
+    "SESSION_RELEASE_ON_CLOSE": "true",
+    "SESSION_ENFORCE_ON_API": "true",
+    "COSMOS_ENDPOINT": "https://<your-cosmos-account>.documents.azure.com:443/",
+    "COSMOS_DATABASE": "sessiondb",
+    "COSMOS_CONTAINER": "sessions-company-a"
   }
 }

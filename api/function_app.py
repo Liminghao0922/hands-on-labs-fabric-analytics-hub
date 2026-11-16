@@ -12,8 +12,12 @@ from shared.keyvault import KeyVaultConfigError, load_service_principal_config
 from shared.mapping import MappingNotFoundError, load_user_mapping
 from shared.onelake_client import OneLakeClient
 from shared.powerbi_client import PowerBIClient
+from session_api import bp as session_bp
+from session_api import require_session
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+# Concurrent session control endpoints: /api/session/acquire|heartbeat|release|status
+app.register_functions(session_bp)
 logger = logging.getLogger(__name__)
 SHOW_DETAILED_ERRORS = os.getenv("SHOW_DETAILED_ERRORS", "false").lower() == "true"
 
@@ -128,6 +132,7 @@ def profile(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="folders", methods=["GET"])
+@require_session
 def folders(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, client_or_response = _build_client(req)
     if not user_upn:
@@ -149,6 +154,7 @@ def folders(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="files", methods=["GET"])
+@require_session
 def files(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, client_or_response = _build_client(req)
     if not user_upn:
@@ -187,6 +193,7 @@ def files(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="upload", methods=["POST"])
+@require_session
 def upload(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, client_or_response = _build_client(req)
     if not user_upn:
@@ -214,6 +221,7 @@ def upload(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="download", methods=["POST"])
+@require_session
 def download(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, client_or_response = _build_client(req)
     if not user_upn:
@@ -246,6 +254,7 @@ def download(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="delete", methods=["POST"])
+@require_session
 def delete(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, client_or_response = _build_client(req)
     if not user_upn:
@@ -274,6 +283,7 @@ def delete(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="reports", methods=["GET"])
+@require_session
 def reports(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, sp_config, error_response = _resolve_user_sp_config(req)
     if error_response:
@@ -306,6 +316,7 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="reports/embed", methods=["POST"])
+@require_session
 def reports_embed(req: func.HttpRequest) -> func.HttpResponse:
     user_upn, sp_config, error_response = _resolve_user_sp_config(req)
     if error_response:
