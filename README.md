@@ -27,6 +27,7 @@ After sign-in, the app maps the user to a specific service principal, then uses 
 - Multi-select download as ZIP
 - Embedded Power BI reports using App Owned Data
 - OneLake SDK enforces permissions: if user's SP lacks access to a folder, OneLake returns permission error
+- Browser-counted concurrent sessions with TTL-driven activity renewal, idle warnings, and optional session diagnostics. See [SESSION_CONTROL.md](SESSION_CONTROL.md) for configuration and behavior.
 
 ## 3. High-Level Architecture
 
@@ -183,6 +184,7 @@ Quick start (React frontend):
 1. Prepare API settings:
   - Copy `api/local.settings.sample.json` to `api/local.settings.json`.
   - Fill `KEY_VAULT_URL` and optional local-dev auth values.
+  - Configure Cosmos DB for session control, or set `SESSION_CONTROL_ENABLED=false` when running without it.
 2. Install dependencies:
 
 ```bash
@@ -222,6 +224,9 @@ swa start http://localhost:5173 --api-location api --app-location frontend
 - Use Key Vault access control and least privilege.
 - Restrict Key Vault access to the app's managed identity in cloud.
 - Always configure folder permissions in Fabric OneLake UI for clear governance and compliance.
+- Keep actual configuration under `api/config/` local; Git includes only `*.sample.json` and `*_sample.json` examples. Use placeholders in those examples.
+- Local settings, `.env` files, editor state, dependency/build output, deployment state, and presentation working folders are ignored by Git.
+- `api/.funcignore` also excludes local settings, credentials/configuration, caches, and tests from Functions Core Tools publishing. The Azure app must use Key Vault rather than local configuration files.
 
 ## 12. Deployment Model
 

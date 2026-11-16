@@ -1,7 +1,35 @@
-export async function apiGet(url) {
+import { noteSessionHeaders, recoverSession, sessionHeaders } from "./sessionClient";
+
+// fetch wrapper for business APIs:
+// - sends the session headers (X-Session-Browser / X-Session-Slot)
+// - updates expiry and counts a heartbeat only when X-Session-Extended is true
+// - on 410 (session expired), re-acquires a session once and retries
+async function sessionFetch(url, options = {}, allowRetry = true) {
   const res = await fetch(url, {
     credentials: "include",
+    ...options,
+    cache: "no-store",
+    headers: {
+      ...(options.headers || {}),
+      ...sessionHeaders(),
+    },
   });
+  noteSessionHeaders((name) => res.headers.get(name));
+
+  if (res.status === 410 && allowRetry) {
+    const payload = await res.clone().json().catch(() => null);
+    if (payload?.code === "SESSION_EXPIRED" || payload?.code === "SESSION_REQUIRED") {
+      if (await recoverSession()) {
+        return sessionFetch(url, options, false);
+      }
+    }
+  }
+
+  return res;
+}
+
+export async function apiGet(url) {
+  const res = await sessionFetch(url);
   if (!res.ok) {
     throw new Error((await safeReadError(res)) || `Request failed: ${res.status}`);
   }
@@ -9,9 +37,8 @@ export async function apiGet(url) {
 }
 
 export async function apiPost(url, payload) {
-  const res = await fetch(url, {
+  const res = await sessionFetch(url, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -79,6 +106,9 @@ export function uploadFiles(folder, files, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/upload?folder=${encodeURIComponent(folder)}`);
     xhr.withCredentials = true;
+    for (const [name, value] of Object.entries(sessionHeaders())) {
+      xhr.setRequestHeader(name, value);
+    }
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable || !onProgress) {
@@ -89,6 +119,7 @@ export function uploadFiles(folder, files, onProgress) {
     };
 
     xhr.onload = () => {
+      noteSessionHeaders((name) => xhr.getResponseHeader(name));
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
@@ -106,9 +137,8 @@ export function uploadFiles(folder, files, onProgress) {
 }
 
 export async function downloadFiles(folder, files) {
-  const res = await fetch(`/api/download?folder=${encodeURIComponent(folder)}`, {
+  const res = await sessionFetch(`/api/download?folder=${encodeURIComponent(folder)}`, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -123,9 +153,8 @@ export async function downloadFiles(folder, files) {
 }
 
 export async function deleteFiles(folder, files) {
-  const res = await fetch(`/api/delete?folder=${encodeURIComponent(folder)}`, {
+  const res = await sessionFetch(`/api/delete?folder=${encodeURIComponent(folder)}`, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },

@@ -1,4 +1,6 @@
+# Python environments and caches
 .venv/
+venv/
 .python_packages/
 __pycache__/
 *.pyc
@@ -7,21 +9,47 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
+htmlcov/
+
+# Local settings and credentials
 .local.settings.json
 local.settings.json
-node_modules/
-.DS_Store
-.vscode/
-dist/
 .env
+.env.*
+!.env.example
+!.env.sample
+*.publishsettings
+*.PublishSettings
+*.pfx
+*.p12
+*.pem
+*.key
+
+# JavaScript dependencies and build output
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Editor, deployment, and presentation working files
+.vscode/
+.azure/
+.swa/
+/pptx-work/
+/output/
+*.log
+*.pid
+.DS_Store
+Thumbs.db
 
 # Azure Azurite local storage emulation
-__azurite_db_blob__.json
-__azurite_db_blob_extent__.json
+__azurite_db_*.json
 __blobstorage__/
+__queuestorage__/
+__tablestorage__/
 
-# Sensitive configuration files
-api/config/user_sp_mapping.json
-api/config/user01_config.json
-api/config/user02_config.json
+# Keep only sanitized configuration examples
+api/config/*.json
+!api/config/*.sample.json
+!api/config/*_sample.json
 .github/workflows/azure-functions-backend.yml

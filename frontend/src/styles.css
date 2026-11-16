@@ -34,6 +34,61 @@ body {
   padding-bottom: 40px;
 }
 
+.session-idle-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(13, 26, 42, 0.65);
+}
+
+.session-idle-dialog {
+  width: min(100%, 520px);
+}
+
+.session-debug {
+  position: sticky;
+  top: 8px;
+  z-index: 10;
+  max-height: 45vh;
+  overflow: auto;
+  background: #f0f7ff;
+  font-size: 13px;
+}
+
+.session-debug summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.session-debug-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 20px;
+}
+
+.session-debug-fields dt {
+  font-weight: 700;
+}
+
+.session-debug-fields dd {
+  margin: 3px 0 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.session-debug-events {
+  overflow: auto;
+}
+
+.session-debug-events td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
